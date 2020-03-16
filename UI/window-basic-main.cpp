@@ -1379,6 +1379,242 @@ void OBSBasic::InitBasicConfigDefaults2()
 					: SIMPLE_ENCODER_X264);
 }
 
+bool OBSBasic::InitUncannyConfig()
+{
+	char path[512];
+	char filename[512];
+	GetConfigPath(path, 512, "obs-studio/basic/profiles/Uncanny");
+	if (os_mkdir(path) == MKDIR_ERROR) {
+		OBSErrorBox(nullptr, "Failed to create Uncanny profile path");
+		return false;
+	}
+	GetConfigPath(filename, 512,
+		      "obs-studio/basic/profiles/Uncanny/basic.ini");
+	uncannyConfig.Open(filename, CONFIG_OPEN_ALWAYS);
+	config_set_string(uncannyConfig, "General", "Name", "Uncanny");
+
+	config_set_uint(uncannyConfig, "Video", "BaseCX", 1440);
+	config_set_uint(uncannyConfig, "Video", "BaseCY", 900);
+	config_set_uint(uncannyConfig, "Video", "OutputCX", 1280);
+	config_set_uint(uncannyConfig, "Video", "OutputCY", 720);
+
+	config_set_string(uncannyConfig, "Output", "mode", "Advanced");
+
+	config_set_string(uncannyConfig, "AdvOut", "encoder", "jim_nvenc");
+	config_set_uint(uncannyConfig, "AdvOut", "trackindex", 1);
+	config_set_string(uncannyConfig, "AdvOut", "rectype", "Standard");
+	config_set_uint(uncannyConfig, "AdvOut", "rectracks", 1);
+	config_set_bool(uncannyConfig, "AdvOut", "ffoutputtofile", true);
+	config_set_string(uncannyConfig, "AdvOut", "ffformat", "");
+	config_set_string(uncannyConfig, "AdvOut", "ffformatmimetype", "");
+	config_set_uint(uncannyConfig, "AdvOut", "ffvencoderid", 0);
+	config_set_string(uncannyConfig, "AdvOut", "ffvencoder", "");
+	config_set_uint(uncannyConfig, "AdvOut", "ffaencoderid", 0);
+	config_set_string(uncannyConfig, "AdvOut", "ffaencoder", "");
+	config_set_uint(uncannyConfig, "AdvOut", "ffaudiomixes", 1);
+	config_set_bool(uncannyConfig, "AdvOut", "applyservicesettings", true);
+
+	config_set_string(uncannyConfig, "Audio", "monitoringdevicename",
+			  "Default");
+	config_set_string(uncannyConfig, "Audio", "monitoringdeviceid",
+			  "default");
+
+	config_set_string(uncannyConfig, "Hotkeys", "obsbasic.startstreaming",
+			  "{\"bindings\": [{\"key\": \"OBS_KEY_F9\"}]}");
+	config_set_string(uncannyConfig, "Hotkeys", "obsbasic.stopstreaming",
+			  "{\"bindings\": [{\"key\": \"OBS_KEY_F9\"}]}");
+
+	uncannyConfig.SaveSafe("tmp");
+
+	const char *json = "{"
+			   "\"bitrate\": 5000,"
+			   "\"keyint_sec\": 2,"
+			   "\"profile\": \"main\""
+			   "}";
+	GetConfigPath(filename, 512,
+		      "obs-studio/basic/profiles/Uncanny/streamEncoder.json");
+	obs_data_t *data = obs_data_create_from_json(json);
+	obs_data_save_json(data, filename);
+
+	const char *service =
+		"{"
+		"\"settings\": {"
+		"\"bwtest\": false,"
+		"\"key\": \"\","
+		"\"server\": \"rtmp://stream.uncanny.gg/fortnite\","
+		"\"service\": \"Uncanny.gg\","
+		"\"use_auth\": false"
+		"},"
+		"\"type\": \"rtmp_common\""
+		"}";
+	GetConfigPath(filename, 512,
+		      "obs-studio/basic/profiles/Uncanny/service.json");
+	obs_data_t *service_data = obs_data_create_from_json(service);
+	obs_data_save_json(service_data, filename);
+
+	QAction *action = new QAction(QT_UTF8("Uncanny"), this);
+	action->setProperty("file_name", QT_UTF8(path));
+	connect(action, &QAction::triggered, this, &OBSBasic::ChangeProfile);
+	action->trigger();
+
+	return true;
+}
+
+bool OBSBasic::InitUncannyScene()
+{
+	char path[512];
+	const char *json =
+		"{"
+		"\"current_program_scene\": \"Uncanny Streaming\","
+		"\"current_scene\": \"Uncanny Streaming\","
+		"\"current_transition\": \"Fade\","
+		"\"groups\": [],"
+		"\"modules\": {"
+		"\"auto-scene-switcher\": {"
+		"\"active\": false,"
+		"\"interval\": 300,"
+		"\"non_matching_scene\": \"\","
+		"\"switch_if_not_matching\": false,"
+		"\"switches\": []"
+		"},"
+		"\"captions\": {"
+		"\"enabled\": false,"
+		"\"lang_id\": 1033,"
+		"\"provider\": \"mssapi\","
+		"\"source\": \"\""
+		"},"
+		"\"output-timer\": {"
+		"\"autoStartRecordTimer\": false,"
+		"\"autoStartStreamTimer\": false,"
+		"\"pauseRecordTimer\": true,"
+		"\"recordTimerHours\": 0,"
+		"\"recordTimerMinutes\": 0,"
+		"\"recordTimerSeconds\": 30,"
+		"\"streamTimerHours\": 0,"
+		"\"streamTimerMinutes\": 0,"
+		"\"streamTimerSeconds\": 30"
+		"},"
+		"\"scripts-tool\": []"
+		"},"
+		"\"name\": \"uncanny_scene\","
+		"\"preview_locked\": false,"
+		"\"quick_transitions\": ["
+		"{"
+		"\"duration\": 300,"
+		"\"hotkeys\": [],"
+		"\"id\": 1,"
+		"\"name\": \"Cut\""
+		"},"
+		"{"
+		"\"duration\": 300,"
+		"\"hotkeys\": [],"
+		"\"id\": 2,"
+		"\"name\": \"Fade\""
+		"}"
+		"],"
+		"\"saved_projectors\": [],"
+		"\"scaling_enabled\": false,"
+		"\"scaling_level\": 0,"
+		"\"scaling_off_x\": 0.0,"
+		"\"scaling_off_y\": 0.0,"
+		"\"scene_order\": [{\"name\": \"Uncanny Streaming\"}],"
+		"\"sources\": ["
+		"{"
+		"\"balance\": 0.5,"
+		"\"deinterlace_field_order\": 0,"
+		"\"deinterlace_mode\": 0,"
+		"\"enabled\": true,"
+		"\"flags\": 0,"
+		"\"hotkeys\":"
+		"{\"hotkey_start\": [], \"hotkey_stop\": []},"
+		"\"id\": \"game_capture\","
+		"\"mixers\": 0,"
+		"\"monitoring_type\": 0,"
+		"\"muted\": false,"
+		"\"name\": \"Fortnite Capture\","
+		"\"prev_ver\": 402653187,"
+		"\"private_settings\": {},"
+		"\"push-to-mute\": false,"
+		"\"push-to-mute-delay\": 0,"
+		"\"push-to-talk\": false,"
+		"\"push-to-talk-delay\": 0,"
+		"\"settings\": {"
+		"\"capture_mode\": \"window\","
+		"\"window\":"
+		"\"Fortnite  :UnrealWindow:FortniteClient-Win64-Shipping.exe\""
+		"},"
+		"\"sync\": 0,"
+		"\"volume\": 1.0"
+		"},"
+		"{"
+		"\"balance\": 0.5,"
+		"\"deinterlace_field_order\": 0,"
+		"\"deinterlace_mode\": 0,"
+		"\"enabled\": true,"
+		"\"flags\": 0,"
+		"\"hotkeys\": {"
+		"\"OBSBasic.SelectScene\": [],"
+		"\"libobs.hide_scene_item.Fortnite Capture\":"
+		"[],"
+		"\"libobs.show_scene_item.Fortnite Capture\":"
+		"[]"
+		"},"
+		"\"id\": \"scene\","
+		"\"mixers\": 0,"
+		"\"monitoring_type\": 0,"
+		"\"muted\": false,"
+		"\"name\": \"Uncanny Streaming\","
+		"\"prev_ver\": 402653187,"
+		"\"private_settings\": {},"
+		"\"push-to-mute\": false,"
+		"\"push-to-mute-delay\": 0,"
+		"\"push-to-talk\": false,"
+		"\"push-to-talk-delay\": 0,"
+		"\"settings\": {"
+		"\"custom_size\": false,"
+		"\"id_counter\": 7,"
+		"\"items\": [{"
+		"\"align\": 5,"
+		"\"bounds\": {\"x\": 0.0, \"y\": 0.0},"
+		"\"bounds_align\": 0,"
+		"\"bounds_type\": 0,"
+		"\"crop_bottom\": 0,"
+		"\"crop_left\": 0,"
+		"\"crop_right\": 0,"
+		"\"crop_top\": 0,"
+		"\"group_item_backup\": false,"
+		"\"id\": 7,"
+		"\"locked\": false,"
+		"\"name\": \"Fortnite Capture\","
+		"\"pos\": {\"x\": 0.0, \"y\": 0.0},"
+		"\"private_settings\": {},"
+		"\"rot\": 0.0,"
+		"\"scale\": {\"x\": 1.0, \"y\": 1.0},"
+		"\"scale_filter\": \"disable\","
+		"\"visible\": true"
+		"}]"
+		"},"
+		"\"sync\": 0,"
+		"\"volume\": 1.0"
+		"}"
+		"],"
+		"\"transition_duration\": 300,"
+		"\"transitions\": []"
+		"}";
+
+	GetConfigPath(path, 512, "obs-studio/basic/scenes/uncanny_scene.json");
+	obs_data_t *data = obs_data_create_from_json(json);
+	obs_data_save_json(data, path);
+
+	QAction *action = new QAction(QT_UTF8("uncanny_scene"), this);
+	action->setProperty("file_name", QT_UTF8(path));
+	connect(action, &QAction::triggered, this,
+		&OBSBasic::ChangeSceneCollection);
+	action->trigger();
+
+	return true;
+}
+
 bool OBSBasic::InitBasicConfig()
 {
 	ProfileScope("OBSBasic::InitBasicConfig");
@@ -1573,6 +1809,7 @@ void OBSBasic::OBSInit()
 
 	if (!InitBasicConfig())
 		throw "Failed to load basic.ini";
+
 	if (!ResetAudio())
 		throw "Failed to initialize audio";
 
@@ -1800,6 +2037,9 @@ void OBSBasic::OBSInit()
 			OBSMessageBox::information(
 				this, QTStr("Basic.AutoConfig"), msg);
 		}
+
+		InitUncannyConfig();
+		InitUncannyScene();
 	}
 
 	ToggleMixerLayout(config_get_bool(App()->GlobalConfig(), "BasicWindow",

@@ -233,6 +233,7 @@ private:
 	float previewScale = 0.0f;
 
 	ConfigFile basicConfig;
+	ConfigFile uncannyConfig;
 
 	std::vector<SavedProjectorInfo *> savedProjectorsArray;
 	std::vector<OBSProjector *> projectors;
@@ -305,6 +306,8 @@ private:
 
 	bool InitBasicConfigDefaults();
 	void InitBasicConfigDefaults2();
+	bool InitUncannyConfig();
+	bool InitUncannyScene();
 	bool InitBasicConfig();
 
 	void InitOBSCallbacks();
