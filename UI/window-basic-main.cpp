@@ -18,6 +18,7 @@
 ******************************************************************************/
 
 #include <ctime>
+#include <regex>
 #include <obs.hpp>
 #include <QGuiApplication>
 #include <QMessageBox>
@@ -1436,26 +1437,7 @@ bool OBSBasic::InitUncannyConfig()
 	obs_data_t *data = obs_data_create_from_json(json);
 	obs_data_save_json(data, filename);
 
-	const char *service =
-		"{"
-		"\"settings\": {"
-		"\"bwtest\": false,"
-		"\"key\": \"\","
-		"\"server\": \"rtmp://stream.uncanny.gg/fortnite\","
-		"\"service\": \"Uncanny.gg\","
-		"\"use_auth\": false"
-		"},"
-		"\"type\": \"rtmp_common\""
-		"}";
-	GetConfigPath(filename, 512,
-		      "obs-studio/basic/profiles/Uncanny/service.json");
-	obs_data_t *service_data = obs_data_create_from_json(service);
-	obs_data_save_json(service_data, filename);
 
-	QAction *action = new QAction(QT_UTF8("Uncanny"), this);
-	action->setProperty("file_name", QT_UTF8(path));
-	connect(action, &QAction::triggered, this, &OBSBasic::ChangeProfile);
-	action->trigger();
 
 	return true;
 }
@@ -1611,6 +1593,53 @@ bool OBSBasic::InitUncannyScene()
 	connect(action, &QAction::triggered, this,
 		&OBSBasic::ChangeSceneCollection);
 	action->trigger();
+
+	return true;
+}
+
+bool OBSBasic::InitStreamKey(){
+	// Propmpt user for their Uncanny.GG stream key.
+	string name;
+	QString placeHolderText = "";
+
+	bool accepted = NameDialog::AskForName(
+		this, "Uncanny.GG Stream Key",
+		"Enter your Uncanny.GG Stream Key", name, placeHolderText);
+
+	if (accepted) {
+		regex r("^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$");
+		if (!regex_match(name, r)) {
+			OBSMessageBox::warning(this,
+					       "Invalid Stream Key",
+					       "Please enter a valid Uncanny.GG Stream Key");
+			InitStreamKey();
+			return false;
+		}
+
+		string service =
+			"{"
+			"\"settings\": {"
+			"\"bwtest\": false,"
+			"\"key\": \"" + name +"\","
+			"\"server\": \"rtmp://stream.uncanny.gg/fortnite\","
+			"\"service\": \"Uncanny.gg\","
+			"\"use_auth\": false"
+			"},"
+			"\"type\": \"rtmp_common\""
+			"}";
+		char path[512];
+		char filename[512];
+		GetConfigPath(path, 512, "obs-studio/basic/profiles/Uncanny");
+		GetConfigPath(filename, 512, "obs-studio/basic/profiles/Uncanny/service.json");
+		obs_data_t *service_data = obs_data_create_from_json(service.c_str());
+		obs_data_save_json(service_data, filename);
+
+		QAction *action = new QAction(QT_UTF8("Uncanny"), this);
+		action->setProperty("file_name", QT_UTF8(path));
+		connect(action, &QAction::triggered, this,
+			&OBSBasic::ChangeProfile);
+		action->trigger();
+	}
 
 	return true;
 }
@@ -2022,6 +2051,7 @@ void OBSBasic::OBSInit()
 	}
 
 	if (!first_run && !has_last_version && !Active()) {
+		/*
 		QString msg;
 		msg = QTStr("Basic.FirstStartup.RunWizard");
 
@@ -2037,9 +2067,14 @@ void OBSBasic::OBSInit()
 			OBSMessageBox::information(
 				this, QTStr("Basic.AutoConfig"), msg);
 		}
+		*/
+	}
 
+
+	if (!ProfileCreated("Uncanny")) {
 		InitUncannyConfig();
 		InitUncannyScene();
+		InitStreamKey();
 	}
 
 	ToggleMixerLayout(config_get_bool(App()->GlobalConfig(), "BasicWindow",
